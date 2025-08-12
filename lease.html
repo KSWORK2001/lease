@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lease Mileage Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background-color: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .result-box {
+            background-color: #f0f8ff;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .calculator {
+            background-color: #fff8e1;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100px;
+            margin: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .warning {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        .good {
+            color: #388e3c;
+            font-weight: bold;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 Lease Mileage Tracker</h1>
+        
+        <div class="info-box">
+            <strong>Lease Details:</strong><br>
+            • Annual allowance: 12,000 miles/year<br>
+            • Total allowed miles: 24,000<br>
+            • Starting odometer: 15 miles<br>
+            • Lease start: August 2, 2025<br>
+            • Lease end: August 2, 2027
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <h3>Today's Date</h3>
+                <div id="currentDate"></div>
+            </div>
+            <div class="stat-item">
+                <h3>Days into Lease</h3>
+                <div id="daysIntoLease"></div>
+            </div>
+            <div class="stat-item">
+                <h3>Days Remaining</h3>
+                <div id="daysRemaining"></div>
+            </div>
+            <div class="stat-item">
+                <h3>% of Lease Complete</h3>
+                <div id="percentComplete"></div>
+            </div>
+        </div>
+
+        <div class="result-box">
+            <h2>Current Mileage Allowance</h2>
+            <div id="currentAllowance" style="font-size: 24px; margin: 10px 0;"></div>
+            <div>Your odometer should be at or below this number today</div>
+        </div>
+
+        <div class="calculator">
+            <h3>🔧 Planning Tools</h3>
+            
+            <div style="margin: 20px 0;">
+                <h4>Current Odometer Check</h4>
+                <label>Enter your current odometer reading: </label>
+                <input type="number" id="currentOdometer" placeholder="e.g. 2500">
+                <button onclick="checkCurrentMileage()">Check Status</button>
+                <div id="odometerStatus"></div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h4>Daily Driving Savings Calculator</h4>
+                <label>If I don't drive for </label>
+                <input type="number" id="daysNotDriving" placeholder="30" value="30">
+                <label> days, I'll save: </label>
+                <button onclick="calculateSavings()">Calculate</button>
+                <div id="savingsResult"></div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h4>Road Trip Planner</h4>
+                <label>Current odometer: </label>
+                <input type="number" id="tripCurrentOdo" placeholder="e.g. 2500">
+                <button onclick="calculateTripAllowance()">Calculate Trip Miles Available</button>
+                <div id="tripResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Lease constants
+        const LEASE_START = new Date('2025-08-02');
+        const LEASE_END = new Date('2027-08-02');
+        const TOTAL_MILES = 24000;
+        const STARTING_ODO = 15;
+        const TOTAL_LEASE_DAYS = Math.floor((LEASE_END - LEASE_START) / (1000 * 60 * 60 * 24));
+        const DAILY_ALLOWANCE = TOTAL_MILES / TOTAL_LEASE_DAYS;
+
+        function updateDisplay() {
+            const today = new Date();
+            const daysIntoLease = Math.floor((today - LEASE_START) / (1000 * 60 * 60 * 24));
+            const daysRemaining = Math.floor((LEASE_END - today) / (1000 * 60 * 60 * 24));
+            const percentComplete = Math.min(100, Math.max(0, (daysIntoLease / TOTAL_LEASE_DAYS) * 100));
+            
+            const allowedMilesSoFar = Math.floor(daysIntoLease * DAILY_ALLOWANCE);
+            const currentAllowedOdometer = STARTING_ODO + allowedMilesSoFar;
+
+            document.getElementById('currentDate').textContent = today.toLocaleDateString();
+            document.getElementById('daysIntoLease').textContent = Math.max(0, daysIntoLease);
+            document.getElementById('daysRemaining').textContent = Math.max(0, daysRemaining);
+            document.getElementById('percentComplete').textContent = percentComplete.toFixed(1) + '%';
+            document.getElementById('currentAllowance').textContent = currentAllowedOdometer.toLocaleString() + ' miles';
+        }
+
+        function checkCurrentMileage() {
+            const currentOdo = parseInt(document.getElementById('currentOdometer').value);
+            if (!currentOdo) {
+                document.getElementById('odometerStatus').innerHTML = '<div style="color: red;">Please enter a valid odometer reading</div>';
+                return;
+            }
+
+            const today = new Date();
+            const daysIntoLease = Math.floor((today - LEASE_START) / (1000 * 60 * 60 * 24));
+            const allowedMilesSoFar = Math.floor(daysIntoLease * DAILY_ALLOWANCE);
+            const currentAllowedOdometer = STARTING_ODO + allowedMilesSoFar;
+            
+            const difference = currentOdo - currentAllowedOdometer;
+            const milesUsed = currentOdo - STARTING_ODO;
+            const milesRemaining = TOTAL_MILES - milesUsed;
+
+            let statusHtml = '<div style="margin-top: 10px;">';
+            
+            if (difference <= 0) {
+                statusHtml += `<div class="good">✅ You're doing great! You're ${Math.abs(difference)} miles under your allowance.</div>`;
+            } else {
+                statusHtml += `<div class="warning">⚠️ You're ${difference} miles over your current allowance.</div>`;
+            }
+            
+            statusHtml += `<div style="margin-top: 10px;">
+                <strong>Summary:</strong><br>
+                • Miles used: ${milesUsed.toLocaleString()}<br>
+                • Miles remaining: ${milesRemaining.toLocaleString()}<br>
+                • Daily allowance remaining: ${(milesRemaining / Math.max(1, Math.floor((LEASE_END - today) / (1000 * 60 * 60 * 24)))).toFixed(1)} miles/day
+            </div>`;
+
+            document.getElementById('odometerStatus').innerHTML = statusHtml;
+        }
+
+        function calculateSavings() {
+            const daysNotDriving = parseInt(document.getElementById('daysNotDriving').value) || 0;
+            const milesSaved = Math.floor(daysNotDriving * DAILY_ALLOWANCE);
+            
+            document.getElementById('savingsResult').innerHTML = 
+                `<div style="margin-top: 10px; color: #4CAF50; font-weight: bold;">
+                    💰 You'll save approximately ${milesSaved} miles!<br>
+                    <small>This gives you ${milesSaved} extra miles to use later in your lease.</small>
+                </div>`;
+        }
+
+        function calculateTripAllowance() {
+            const currentOdo = parseInt(document.getElementById('tripCurrentOdo').value);
+            if (!currentOdo) {
+                document.getElementById('tripResult').innerHTML = '<div style="color: red;">Please enter your current odometer reading</div>';
+                return;
+            }
+
+            const today = new Date();
+            const daysIntoLease = Math.floor((today - LEASE_START) / (1000 * 60 * 60 * 24));
+            const daysRemaining = Math.floor((LEASE_END - today) / (1000 * 60 * 60 * 24));
+            const allowedMilesSoFar = Math.floor(daysIntoLease * DAILY_ALLOWANCE);
+            const currentAllowedOdometer = STARTING_ODO + allowedMilesSoFar;
+            
+            const milesUsed = currentOdo - STARTING_ODO;
+            const totalMilesRemaining = TOTAL_MILES - milesUsed;
+            const dailyAllowanceRemaining = totalMilesRemaining / Math.max(1, daysRemaining);
+            
+            // Conservative estimate: use 80% of remaining allowance for trip
+            const safeRoadTripMiles = Math.floor(totalMilesRemaining * 0.8);
+            
+            let resultHtml = '<div style="margin-top: 10px;">';
+            
+            if (totalMilesRemaining > 0) {
+                resultHtml += `<div style="color: #4CAF50; font-weight: bold;">
+                    🛣️ Road Trip Budget: Up to ${safeRoadTripMiles.toLocaleString()} miles (conservative estimate)<br>
+                </div>
+                <div style="margin-top: 10px; font-size: 14px;">
+                    <strong>Breakdown:</strong><br>
+                    • Total miles remaining: ${totalMilesRemaining.toLocaleString()}<br>
+                    • Recommended daily driving after trip: ${dailyAllowanceRemaining.toFixed(1)} miles/day<br>
+                    • Days remaining in lease: ${daysRemaining}<br>
+                    <small><em>Conservative estimate uses 80% of remaining allowance to leave buffer for daily driving.</em></small>
+                </div>`;
+            } else {
+                resultHtml += '<div class="warning">⚠️ You have already exceeded your total lease mileage allowance.</div>';
+            }
+            
+            resultHtml += '</div>';
+            document.getElementById('tripResult').innerHTML = resultHtml;
+        }
+
+        // Initialize display on page load
+        updateDisplay();
+    </script>
+</body>
+</html>
